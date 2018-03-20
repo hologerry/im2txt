@@ -25,6 +25,19 @@ import tensorflow as tf
 from im2txt.ops import image_embedding
 
 
+def _countInceptionParameters():
+  """Counts the number of parameters in the inception model at top scope."""
+  counter = {}
+  for v in tf.global_variables():
+    name_tokens = v.op.name.split("/")
+    if name_tokens[0] == "InceptionV3":
+      name = "InceptionV3/" + name_tokens[1]
+      num_params = v.get_shape().num_elements()
+      assert num_params
+      counter[name] = counter.get(name, 0) + num_params
+  return counter
+
+
 class InceptionV3Test(tf.test.TestCase):
 
   def setUp(self):
@@ -38,21 +51,9 @@ class InceptionV3Test(tf.test.TestCase):
                                   [batch_size, height, width, num_channels])
     self._batch_size = batch_size
 
-  def _countInceptionParameters(self):
-    """Counts the number of parameters in the inception model at top scope."""
-    counter = {}
-    for v in tf.global_variables():
-      name_tokens = v.op.name.split("/")
-      if name_tokens[0] == "InceptionV3":
-        name = "InceptionV3/" + name_tokens[1]
-        num_params = v.get_shape().num_elements()
-        assert num_params
-        counter[name] = counter.get(name, 0) + num_params
-    return counter
-
   def _verifyParameterCounts(self):
     """Verifies the number of parameters in the inception model."""
-    param_counts = self._countInceptionParameters()
+    param_counts = _countInceptionParameters()
     expected_param_counts = {
         "InceptionV3/Conv2d_1a_3x3": 960,
         "InceptionV3/Conv2d_2a_3x3": 9312,
